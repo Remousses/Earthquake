@@ -22,15 +22,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     private Context mContext;
     private List<EarthquakeBean> mData;
-    private RequestOptions option;
 
     public RecyclerViewAdapter(Context mContext, List<EarthquakeBean> mData) {
-        System.out.println("mData : " + mData);
         this.mContext = mContext;
         // elle concerne la liste affiché dans Recycler View
         this.mData = mData;
-        // request option pour Glide
-        option = new RequestOptions().centerCrop().placeholder(R.drawable.loading_shape).error(R.drawable.loading_shape);
     }
 
     @Override
@@ -44,7 +40,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         viewHolder.viewContainer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 Intent i = new Intent(mContext, EarthquakeActivity.class);
                 i.putExtra("earthquake_urlmap",mData.get(viewHolder.getAdapterPosition()).getUrlMap());
 
@@ -61,10 +56,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         holder.tvPlace.setText(mData.get(i).getPlace());
         holder.tvTime.setText(mData.get(i).getTime().toString());
         holder.tvMagnetude.setText(mData.get(i).getMagnetude().toString());
-
-        //charger l'image de l'url et la stocker dans l'imageview grâce à Glide
-
-        //Glide.with(mContext).load(mData.get(i).getImage()).apply(option).into(holder.imgThumbnail);
     }
 
     @Override

@@ -28,15 +28,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.math.BigInteger;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
 public class EarthquakeApi {
-    private static String EARTQUAKE_URL = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson";
-
     private final  MainActivity mainActivity;
 
     public EarthquakeApi(final MainActivity mainActivity){
@@ -47,21 +44,45 @@ public class EarthquakeApi {
      * Lit une url qui renvoie un format JSON.
      * Si artisteName renseigné, lit l'url pour un artiste sinon pour toute la collection.
      * @param callback
+     * @param startDate
+     * @param endDate
      * @return la liste des oeuvres pour un artiste provenant de l'url.
      */
-    public void readFromJson(final VolleyCallback callback) {
+    public void readFromJson(final VolleyCallback callback, String startDate, String endDate) {
+        String earthquake_ulr = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson";
         LocalDateTime currentTime = LocalDateTime.now();
 
         int soustractOneMounth = currentTime.getMonth().getValue() - 1;
 
         String lastMounth = currentTime.getYear() + "-" + soustractOneMounth + "-" +  currentTime.getDayOfMonth();
 
-        //EARTQUAKE_URL += "&starttime=" + lastMounth + "&endtime=" + currentTime.toLocalDate();
+        if(startDate == null && endDate == null){
+            System.out.println("if");
+            earthquake_ulr += "&starttime=" + lastMounth + "&endtime=" + currentTime.toLocalDate();
+        } else {
 
-        EARTQUAKE_URL += "&starttime=2019-02-02&endtime=2019-02-15";
+            System.out.println("startDate : " + startDate);
+
+            System.out.println("endDate : " + endDate);
+            System.out.println("else");
+
+            // go faire un split XD
+
+            String[] splitStartDate = startDate.split("/");
+
+            startDate = splitStartDate[2] + "-" + splitStartDate[1] + "-" + splitStartDate[0];
+
+            String[] splitEndDate = endDate.split("/");
+
+            endDate = splitEndDate[2] + "-" + splitEndDate[1] + "-" + splitEndDate[0];
+
+            earthquake_ulr += "&starttime=" + startDate + "&endtime=" + endDate;
+        }
+
+        System.out.println("earthquake_ulr : " + earthquake_ulr);
         try {
             JsonObjectRequest jsonObjectRequest = new JsonObjectRequest
-                    (Request.Method.GET, EARTQUAKE_URL, null, new Response.Listener<JSONObject>() {
+                    (Request.Method.GET, earthquake_ulr, null, new Response.Listener<JSONObject>() {
                         @Override
                         public void onResponse(final JSONObject response) {
                             callback.onSuccess(response);
@@ -70,7 +91,7 @@ public class EarthquakeApi {
                         @Override
                         public void onErrorResponse(VolleyError error) {
                             System.out.println("Erreur lors de la récupération de l'url : " + error);
-                            mainActivity.setLoader();
+                            mainActivity.setLoaderGone();
 
                             final Dialog dialog = new Dialog(mainActivity);
                             dialog.setContentView(R.layout.network_error);
@@ -96,9 +117,6 @@ public class EarthquakeApi {
                             });
 
                             dialog.show();
-
-                            //Intent intent = new Intent(Settings.ACTION_WIRELESS_SETTINGS);
-                            //applicationContext.startActivity(intent);
 
                             if (error instanceof TimeoutError || error instanceof NoConnectionError) {
                             } else if (error instanceof AuthFailureError) {
@@ -127,12 +145,14 @@ public class EarthquakeApi {
      * @param response
      * @return la liste des tremblement de terre pour les 30 derniers jours
      */
-    public List<EarthquakeBean> getLastThirtyDaysEarthquake(List<EarthquakeBean> earthquakeList, JSONObject response){
+    public List<EarthquakeBean> getEarthquake(List<EarthquakeBean> earthquakeList, JSONObject response){
         String id = null;
         String place = null;
         BigInteger time = null;
         Double magnetude = null;
         String urlMap = null;
+
+        earthquakeList.clear();
 
         try {
             JSONArray features = response.getJSONArray("features");
@@ -157,54 +177,12 @@ public class EarthquakeApi {
                 earthquakeList.add(earthquakeBean);
             }
 
+            System.out.println("pro : " + earthquakeList);
             mainActivity.setUpdateRecyclerView(earthquakeList);
         } catch (JSONException e) {
             System.out.println("Erreur lors du parsing JSON de features : " + e);
         }
 
         return earthquakeList;
-    }
-
-    /**
-     * Récupère la liste des artistes.
-     * @param artWorkList
-     * @param response
-     * @return la liste des artistes
-     */
-    public List<EarthquakeBean> getArtists(List<EarthquakeBean> artWorkList, JSONObject response){
-        try {
-            if(response.getInt("count") != 0){
-                JSONArray firstFacets = response.getJSONArray("facets");
-
-                for(int i = 0; i < firstFacets.length(); i++) {
-                    JSONObject facets = firstFacets.getJSONObject(i);
-
-                    if(facets.getString("name").equals("principalMaker")) {
-                        JSONArray facetsList = facets.getJSONArray("facets");
-                        System.out.println("*** Nombres d'artistes dans la liste getArtists : " + facetsList.length() + " ***");
-
-                        for(int j = 0, b = 0; j < facetsList.length(); j++) {
-                            JSONObject art = facetsList.getJSONObject(j);
-                            EarthquakeBean artWork = new EarthquakeBean();
-
-                            /*artWork.setAuthor(art.getString("key"));
-                            artWork.setArtWorkNumber(art.getInt("value"));
-                            artWork.setIndex(b++);*/
-
-                            artWorkList.add(artWork);
-                        }
-                    }
-                }
-
-                mainActivity.setUpdateRecyclerView(artWorkList);
-            } else {
-                System.out.println(response.getInt("count"));
-                System.out.println("Pas d'image");
-            }
-        } catch (JSONException e) {
-            System.out.println("Erreur lors du parsing JSON : " + e);
-        }
-
-        return artWorkList;
     }
 }
